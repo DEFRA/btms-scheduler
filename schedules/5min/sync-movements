@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "Sync Movements, calling $TDM_API"
+curl $TDM_API/sync/clearance-requests/today

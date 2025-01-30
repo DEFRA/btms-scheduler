@@ -1,50 +1,27 @@
-# btms-scheduler
+# tdm-prototype-scheduler
 
-Core delivery C# ASP.NET backend template.
+### Development image
 
-* [Install MongoDB](#install-mongodb)
-* [Inspect MongoDB](#inspect-mongodb)
-* [Testing](#testing)
-* [Running](#running)
-* [Dependabot](#dependabot)
+Build:
 
-### Install MongoDB
-- Install [MongoDB](https://www.mongodb.com/docs/manual/tutorial/#installation) on your local machine
-- Start MongoDB:
 ```bash
-sudo mongod --dbpath ~/mongodb-cdp
+docker build --tag tdm-prototype-scheduler .
 ```
 
-### Inspect MongoDB
+Run:
 
-To inspect the Database and Collections locally:
 ```bash
-mongosh
+docker run -p 8080:8080 tdm-prototype-scheduler
 ```
 
-### Testing
-
-Run the tests with:
-
-Tests run by running a full `WebApplication` backed by [Ephemeral MongoDB](https://github.com/asimmon/ephemeral-mongo).
-Tests do not use mocking of any sort and read and write from the in-memory database.
+Run, passing an API to connect to:
 
 ```bash
-dotnet test
-````
-
-### Running
-
-Run CDP-Deployments application:
-```bash
-dotnet run --project BtmsScheduler --launch-profile Development
+docker run -p 8080:8080 -e TDM_API=https://localhost:7094/ tdm-prototype-scheduler
 ```
 
-### SonarCloud
+Connect & poke around:
 
-Example SonarCloud configuration are available in the GitHub Action workflows.
-
-### Dependabot
-
-We have added an example dependabot configuration file to the repository. You can enable it by renaming
-the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
+```bash
+docker run --rm -it -p 8080:8080 --entrypoint ash tdm-prototype-scheduler
+```

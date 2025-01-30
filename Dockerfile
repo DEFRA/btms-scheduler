@@ -1,35 +1,14 @@
-﻿# Base dotnet image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+﻿FROM alpine:3.20 as rq-build
 
-# Add curl to template.
-# CDP PLATFORM HEALTHCHECK REQUIREMENT
-RUN apt update && \
-    apt install curl -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --update supervisor vim curl
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Build stage image
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
+RUN echo "*/1    *       *       *       *       run-parts /etc/periodic/5min" | crontab -
+COPY ./schedules /etc/periodic
 
-COPY . .
-WORKDIR "/src"
+RUN mkdir /tmp/null
 
-# unit test and code coverage
-RUN dotnet test BtmsScheduler.Test
-
-FROM build AS publish
-RUN dotnet publish BtmsScheduler -c Release -o /app/publish /p:UseAppHost=false
-
-
-ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-
-# Final production image
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-EXPOSE 8085
-ENTRYPOINT ["dotnet", "BtmsScheduler.dll"]
+ARG PORT=8085
+ENV PORT ${PORT}
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
