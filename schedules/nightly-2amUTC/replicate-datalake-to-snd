@@ -1,0 +1,8 @@
+#!/bin/sh
+echo "replicate-datalake-to-snd, Enabled : $REPLICATE_DATALAKE"
+
+if [ "$REPLICATE_DATALAKE" == "true" ]; then
+    echo "Calling $CORE_BACKEND_API_URL/sync/replicate?syncPeriod=Yesterday"
+else
+    echo "Replication disabled"
+fi

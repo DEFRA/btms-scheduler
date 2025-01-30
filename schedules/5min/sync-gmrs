@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "Sync GMRs, calling $TDM_API"
+echo "Sync GMRs, calling $CORE_BACKEND_API_URL"

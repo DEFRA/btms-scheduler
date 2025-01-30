@@ -1,3 +1,3 @@
 #!/bin/sh
-echo "Sync Notifications, calling $TDM_API"
-curl $TDM_API/sync/notifications/today
+echo "Sync Notifications, calling $CORE_BACKEND_API_URL"
+#curl $CORE_BACKEND_API_URL/sync/notifications/today

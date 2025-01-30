@@ -1,27 +1,27 @@
-# tdm-prototype-scheduler
+# btms-scheduler
 
 ### Development image
 
 Build:
 
 ```bash
-docker build --tag tdm-prototype-scheduler .
+docker build --tag btms-scheduler .
 ```
 
 Run:
 
 ```bash
-docker run -p 8080:8080 tdm-prototype-scheduler
+docker run --rm --name btms-scheduler -p 8080:8080 btms-scheduler
 ```
 
 Run, passing an API to connect to:
 
 ```bash
-docker run -p 8080:8080 -e TDM_API=https://localhost:7094/ tdm-prototype-scheduler
+docker run --rm --name btms-scheduler -p 8080:8080 -e CORE_BACKEND_API_URL=http://btms-backend.localtest.me:5002/ btms-scheduler
 ```
 
 Connect & poke around:
 
 ```bash
-docker run --rm -it -p 8080:8080 --entrypoint ash tdm-prototype-scheduler
+docker run --name btms-scheduler --rm -it -p 8080:8080 --entrypoint ash btms-scheduler
 ```

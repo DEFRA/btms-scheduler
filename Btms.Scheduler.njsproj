@@ -1,0 +1,22 @@
+<Project>
+
+  <ItemGroup>
+    <Content Include=".dockerignore" />
+    <Content Include=".editorconfig" />
+    <Content Include=".gitignore" />
+    <Content Include="crontabs.root" />
+    <Content Include="Dockerfile" />
+    <Content Include="README.md" />
+    <Content Include="schedules\.DS_Store" />
+    <Content Include="schedules\5min\sync-gmrs" />
+    <Content Include="schedules\5min\sync-movements" />
+    <Content Include="schedules\5min\sync-notifications" />
+    <Content Include="schedules\nightly-2amUTC\replicate-datalake-to-snd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="schedules\15min\" />
+  </ItemGroup>
+
+
+</Project>
