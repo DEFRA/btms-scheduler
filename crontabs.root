@@ -1,2 +1,1 @@
-*/1 *   *   *   *   run-parts /etc/periodic/5min 
 0   2   *   *   *   run-parts /etc/periodic/nightly-2amUTC
