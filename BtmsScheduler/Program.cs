@@ -1,5 +1,5 @@
-using BtmsScheduler.Example.Endpoints;
-using BtmsScheduler.Example.Services;
+
+using System.Configuration;
 using BtmsScheduler.Utils;
 using BtmsScheduler.Utils.Http;
 using BtmsScheduler.Utils.Logging;
@@ -7,7 +7,11 @@ using BtmsScheduler.Utils.Mongo;
 using FluentValidation;
 using Serilog;
 using Serilog.Core;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;using System.Net;
+using BtmsScheduler;
+using Hangfire;
+using Hangfire.InMemory;
+using Microsoft.Extensions.Options;
 
 //-------- Configure the WebApplication builder------------------//
 
@@ -38,7 +42,7 @@ static void ConfigureWebApplication(WebApplicationBuilder _builder)
    _builder.Services.AddCustomTrustStore(logger);
 
    ConfigureMongoDb(_builder);
-
+   ConfigureHangfire(_builder);
    ConfigureEndpoints(_builder);
 
    _builder.Services.AddHttpClient();
@@ -50,46 +54,73 @@ static void ConfigureWebApplication(WebApplicationBuilder _builder)
 }
 
 [ExcludeFromCodeCoverage]
-static Logger ConfigureLogging(WebApplicationBuilder _builder)
+static void ConfigureHangfire(WebApplicationBuilder builder)
 {
-   _builder.Logging.ClearProviders();
+    var storage = new InMemoryStorage(new InMemoryStorageOptions { MaxExpirationTime = TimeSpan.FromHours(48) });
+    
+    builder.Services.AddHangfire(c => c
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSerilogLogProvider()
+        // Currently only running a daily job, in future we may need mongo/redis backing
+        .UseStorage(storage)
+    );
+
+    // For some reason this isn't set automatically...
+    // https://stackoverflow.com/questions/52113361/jobstorage-current-property-value-has-not-been-initialized-you-must-set-it-befo
+    JobStorage.Current = storage;
+
+    // Add the processing server as IHostedService
+    builder.Services.AddHangfireServer(serverOptions => { serverOptions.ServerName = "Hangfire Server 1"; });
+}
+
+[ExcludeFromCodeCoverage]
+static Logger ConfigureLogging(WebApplicationBuilder builder)
+{
+   builder.Logging.ClearProviders();
    var logger = new LoggerConfiguration()
-       .ReadFrom.Configuration(_builder.Configuration)
+       .ReadFrom.Configuration(builder.Configuration)
        .Enrich.With<LogLevelMapper>()
        .Enrich.WithProperty("service.version", Environment.GetEnvironmentVariable("SERVICE_VERSION"))
        .CreateLogger();
-   _builder.Logging.AddSerilog(logger);
+   builder.Logging.AddSerilog(logger);
    logger.Information("Starting application");
    return logger;
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureMongoDb(WebApplicationBuilder _builder)
+static void ConfigureMongoDb(WebApplicationBuilder builder)
 {
-   _builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
-       new MongoDbClientFactory(_builder.Configuration.GetValue<string>("Mongo:DatabaseUri")!,
-           _builder.Configuration.GetValue<string>("Mongo:DatabaseName")!));
+   builder.Services.AddSingleton<IMongoDbClientFactory>(_ =>
+       new MongoDbClientFactory(builder.Configuration.GetValue<string>("Mongo:DatabaseUri")!,
+           builder.Configuration.GetValue<string>("Mongo:DatabaseName")!));
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureEndpoints(WebApplicationBuilder _builder)
+static void ConfigureEndpoints(WebApplicationBuilder builder)
 {
-   // our Example service, remove before deploying!
-   _builder.Services.AddSingleton<IExamplePersistence, ExamplePersistence>();
-
-   _builder.Services.AddHealthChecks();
+   builder.Services.AddHealthChecks();
 }
 
 [ExcludeFromCodeCoverage]
-static WebApplication BuildWebApplication(WebApplicationBuilder _builder)
+static WebApplication BuildWebApplication(WebApplicationBuilder builder)
 {
-   var app = _builder.Build();
+   var app = builder.Build();
 
    app.UseRouting();
    app.MapHealthChecks("/health");
-
-   // Example module, remove before deploying!
-   app.UseExampleEndpoints();
-
+   app.UseHangfireDashboard();
+   
+   var config = builder.Configuration
+       .GetSection(ScheduleOptions.SectionName)
+       .Get<ScheduleOptions>()!;
+   
+   foreach(KeyValuePair<string, RecurringTaskOption> entry in config.RecurringTasks)
+   {
+       Console.WriteLine("Registering recurring job {0}", entry.Key);
+       RecurringJob.AddOrUpdate<RecurringTask>(entry.Key, (t) => t.Invoke(entry.Key, entry.Value), entry.Value.Schedule);
+   }
+   
    return app;
 }
